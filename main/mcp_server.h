@@ -278,4 +278,6 @@ private:
     std::thread tool_call_thread_;
 };
 
+void send_uart_data(char command);
+
 #endif // MCP_SERVER_H

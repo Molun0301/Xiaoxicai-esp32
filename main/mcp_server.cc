@@ -49,7 +49,7 @@ void McpServer::AddCommonTools() {
     auto& board = Board::GetInstance();
 
     AddTool("move_forward",
-        "发送前进命令",
+        "前进",
         PropertyList(),
         [this](const PropertyList& properties) -> ReturnValue {
             send_uart_data('1');
@@ -57,7 +57,7 @@ void McpServer::AddCommonTools() {
         });
 
     AddTool("move_backward",
-        "发送后退命令",
+        "后退",
         PropertyList(),
         [this](const PropertyList& properties) -> ReturnValue {
             send_uart_data('2');
@@ -65,7 +65,7 @@ void McpServer::AddCommonTools() {
         });
 
     AddTool("move_Left",
-        "发送左转命令",
+        "左转",
         PropertyList(),
         [this](const PropertyList& properties) -> ReturnValue {
             send_uart_data('3');
@@ -73,7 +73,7 @@ void McpServer::AddCommonTools() {
         });
 
     AddTool("move_Right",
-        "发送右转命令",
+        "右转",
         PropertyList(),
         [this](const PropertyList& properties) -> ReturnValue {
             send_uart_data('4');
@@ -81,14 +81,14 @@ void McpServer::AddCommonTools() {
         });
 
     AddTool("STOP",
-        "发送停止命令",
+        "停止",
         PropertyList(),
         [this](const PropertyList& properties) -> ReturnValue {
             send_uart_data('0');
             return true;
         });
     AddTool("nod_head",
-        "发送点点头命令",
+        "点点头",
         PropertyList(),
         [this](const PropertyList& properties) -> ReturnValue {
             send_uart_data('6');
@@ -96,7 +96,7 @@ void McpServer::AddCommonTools() {
         });
 
     AddTool("shake_head",
-        "发送摇摇头命令",
+        "摇摇头",
         PropertyList(),
         [this](const PropertyList& properties) -> ReturnValue {
             send_uart_data('5');
@@ -104,7 +104,7 @@ void McpServer::AddCommonTools() {
         });
 
     AddTool("move_LeftEar",
-        "发送动一下左耳朵命令",
+        "动一下左耳朵",
         PropertyList(),
         [this](const PropertyList& properties) -> ReturnValue {
             send_uart_data('8');
@@ -112,7 +112,7 @@ void McpServer::AddCommonTools() {
         });
 
     AddTool("move_RightEar",
-        "发送动一下右耳朵命令",
+        "动一下右耳朵",
         PropertyList(),
         [this](const PropertyList& properties) -> ReturnValue {
             send_uart_data('9');
@@ -120,10 +120,34 @@ void McpServer::AddCommonTools() {
         });
 
     AddTool("动两个耳朵",
-        "发送动两个耳朵命令",
+        "动动耳朵",
         PropertyList(),
         [this](const PropertyList& properties) -> ReturnValue {
-            send_uart_data('7');
+            send_uart_data('a');
+            return true;
+        });
+
+    AddTool("思考",
+        "think",
+        PropertyList(),
+        [this](const PropertyList& properties) -> ReturnValue {
+            send_uart_data('b');
+            return true;
+        });
+
+    AddTool("转一圈",
+        "转圈",
+        PropertyList(),
+        [this](const PropertyList& properties) -> ReturnValue {
+            send_uart_data('c');
+            return true;
+        });
+
+    AddTool("低头",
+        "lower_head",
+        PropertyList(),
+        [this](const PropertyList& properties) -> ReturnValue {
+            send_uart_data('d');
             return true;
         });
 

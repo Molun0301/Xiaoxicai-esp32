@@ -8,10 +8,9 @@
 #include "assets/lang_config.h"
 #include <cstring>
 #include "settings.h"
-
 #include "lvgl.h" 
-
 #include "board.h"
+#include "mcp_server.h"
 
 #define TAG "LcdDisplay"
 
@@ -814,6 +813,37 @@ void LcdDisplay::SetEmotion(const char* emotion) {
         return;
     }
 
+    if (it != emotions.end()) {
+        // lv_label_set_text(emotion_label_, it->icon);
+        if(!strcmp(it->text, "happy")  ) {
+           send_uart_data('a');
+           ESP_LOGW(TAG, "send a happy");
+        } else if(!strcmp(it->text, "laughing")) {
+            send_uart_data('a');
+            ESP_LOGW(TAG, "send a laughing");
+        } else if(!strcmp(it->text, "relaxed") ) {
+             send_uart_data('6');
+             ESP_LOGD(TAG, "send 6 relaxed");
+        } else if(!strcmp(it->text, "funny") || !strcmp(it->text, "loving") ||  !strcmp(it->text, "kissy")) {
+            send_uart_data('a');
+            send_uart_data('c');
+            ESP_LOGD(TAG, "send a,c funny,loving,kissy");
+        } else if(!strcmp(it->text, "sad") || !strcmp(it->text, "crying") || !strcmp(it->text, "embarrassed") || !strcmp(it->text, "shocked") || !strcmp(it->text, "confused")) {
+            send_uart_data('5');
+            send_uart_data('d');
+            ESP_LOGD(TAG, "send 5,d sad,crying,crying,shocked,confused");
+        } else if(!strcmp(it->text, "surprised") || !strcmp(it->text, "thinking") || !strcmp(it->text, "c") || !strcmp(it->text, "delicious") || !strcmp(it->text, "silly")) {
+            send_uart_data('a');
+            send_uart_data('b');
+            send_uart_data('c');
+            ESP_LOGD(TAG, "send a,b,c surprised,thinking,thinking,delicious");
+        } else if(!strcmp(it->text, "angry") ) {
+            send_uart_data('5');
+            send_uart_data('d');
+             ESP_LOGD(TAG, "send 5,d angry");
+        } 
+    } 
+#if 1
     // 如果找到匹配的表情就显示对应图标，否则显示默认的neutral表情
     lv_obj_set_style_text_font(emotion_label_, fonts_.emoji_font, 0);
     if (it != emotions.end()) {
@@ -821,6 +851,8 @@ void LcdDisplay::SetEmotion(const char* emotion) {
     } else {
         lv_label_set_text(emotion_label_, "😶");
     }
+#endif
+
 }
 
 void LcdDisplay::SetIcon(const char* icon) {
