@@ -135,8 +135,8 @@ void McpServer::AddCommonTools() {
             return true;
         });
 
-    AddTool("转一圈",
-        "转圈",
+    AddTool("摇摆",
+        "晃一晃",
         PropertyList(),
         [this](const PropertyList& properties) -> ReturnValue {
             send_uart_data('c');
@@ -151,6 +151,35 @@ void McpServer::AddCommonTools() {
             return true;
         });
 
+    AddTool("转一圈",
+        "转圈",
+        PropertyList(),
+        [this](const PropertyList& properties) -> ReturnValue {
+            send_uart_data('e');
+            return true;
+        });
+
+    AddTool("向左看",
+        "seeleft",
+        PropertyList(),
+        [this](const PropertyList& properties) -> ReturnValue {
+            send_uart_data('g');
+            return true;
+        });
+    AddTool("向右看",
+        "seeright",
+        PropertyList(),
+        [this](const PropertyList& properties) -> ReturnValue {
+            send_uart_data('f');
+            return true;
+        });
+    AddTool("向前看",
+        "lookforward",
+        PropertyList(),
+        [this](const PropertyList& properties) -> ReturnValue {
+            send_uart_data('h');
+            return true;
+        });
     AddTool("self.get_device_status",
         "Provides the real-time information of the device, including the current status of the audio speaker, screen, battery, network, etc.\n"
         "Use this tool for: \n"
