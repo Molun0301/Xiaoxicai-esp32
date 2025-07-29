@@ -7,6 +7,7 @@
 #include <esp_pm.h>
 
 #include <string>
+#include <chrono>
 
 struct DisplayFonts {
     const lv_font_t* text_font = nullptr;
@@ -25,11 +26,12 @@ public:
     virtual void SetEmotion(const char* emotion);
     virtual void SetChatMessage(const char* role, const char* content);
     virtual void SetIcon(const char* icon);
-    virtual void SetPreviewImage(const lv_img_dsc_t* img_dsc) = 0;
+    virtual void SetPreviewImage(const lv_img_dsc_t* image);
     virtual void SetTheme(const std::string& theme_name);
     virtual std::string GetTheme() { return current_theme_name_; }
     virtual void UpdateStatusBar(bool update_all = false);
-    
+    virtual void ShowStandbyScreen(bool show);
+
     // 画布相关方法 - 用于在UI顶层显示图片
     virtual void CreateCanvas();
     virtual void DestroyCanvas();
@@ -61,15 +63,16 @@ protected:
     // 画布对象 - 用于在顶层显示图片
     lv_obj_t* canvas_ = nullptr;
     void* canvas_buffer_ = nullptr;
-    
+
     const char* battery_icon_ = nullptr;
     const char* network_icon_ = nullptr;
     bool muted_ = false;
     std::string current_theme_name_;
 
+    std::chrono::system_clock::time_point last_status_update_time_;
     esp_timer_handle_t notification_timer_ = nullptr;
     esp_timer_handle_t update_timer_ = nullptr;
-
+    
     friend class DisplayLockGuard;
     virtual bool Lock(int timeout_ms = 0) = 0;
     virtual void Unlock() = 0;

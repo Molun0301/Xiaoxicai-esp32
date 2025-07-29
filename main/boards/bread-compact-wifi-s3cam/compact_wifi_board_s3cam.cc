@@ -1,5 +1,5 @@
 #include "wifi_board.h"
-#include "audio_codecs/no_audio_codec.h"
+#include "codecs/no_audio_codec.h"
 #include "display/lcd_display.h"
 #include "system_reset.h"
 #include "application.h"
@@ -7,7 +7,6 @@
 #include "config.h"
 #include "mcp_server.h"
 #include "lamp_controller.h"
-#include "iot/thing_manager.h"
 #include "led/single_led.h"
 #include "esp32_camera.h"
 
@@ -87,7 +86,7 @@ private:
  
     Button boot_button_;
     LcdDisplay* display_;
-     Esp32Camera* camera_;
+    Esp32Camera* camera_;
     TaskHandle_t image_task_handle_ = nullptr; // 图片显示任务句柄
 
     void InitializeSpi() {
@@ -100,6 +99,7 @@ private:
         buscfg.max_transfer_sz = DISPLAY_WIDTH * DISPLAY_HEIGHT * sizeof(uint16_t);
         ESP_ERROR_CHECK(spi_bus_initialize(SPI3_HOST, &buscfg, SPI_DMA_CH_AUTO));
     }
+
     // 启动图片循环显示任务
     void StartImageSlideshow() {
         xTaskCreate(ImageSlideshowTask, "img_slideshow", 4096, this, 3, &image_task_handle_);
@@ -325,30 +325,17 @@ private:
         });
     }
 
-    // 物联网初始化，添加对 AI 可见设备
-    void InitializeIot() {
-#if CONFIG_IOT_PROTOCOL_XIAOZHI
-        auto& thing_manager = iot::ThingManager::GetInstance();
-        thing_manager.AddThing(iot::CreateThing("Speaker"));
-        thing_manager.AddThing(iot::CreateThing("Screen"));
-#elif CONFIG_IOT_PROTOCOL_MCP
-
-#endif
-    }
-
 public:
     CompactWifiBoardS3Cam() :
         boot_button_(BOOT_BUTTON_GPIO) {
         InitializeSpi();
         InitializeLcdDisplay();
         InitializeButtons();
-        InitializeIot();
         InitializeCamera();
         if (DISPLAY_BACKLIGHT_PIN != GPIO_NUM_NC) {
             GetBacklight()->RestoreBrightness();
         }
         StartImageSlideshow();
-
     }
 
     virtual Led* GetLed() override {

@@ -1,3 +1,8 @@
+/*
+ * MCP Server Implementation
+ * Reference: https://modelcontextprotocol.io/specification/2024-11-05
+ */
+
 #include "mcp_server.h"
 #include <esp_log.h>
 #include <esp_app_desc.h>
@@ -34,7 +39,6 @@ void send_uart_data(char command) {
 }
 
 McpServer::McpServer() {
-    uart_initialize();
 }
 
 McpServer::~McpServer() {
@@ -45,9 +49,11 @@ McpServer::~McpServer() {
 }
 
 void McpServer::AddCommonTools() {
+    // To speed up the response time, we add the common tools to the beginning of
+    // the tools list to utilize the prompt cache.
+    // Backup the original tools list and restore it after adding the common tools.
     auto original_tools = std::move(tools_);
     auto& board = Board::GetInstance();
-
     AddTool("move_forward",
         "前进",
         PropertyList(),
@@ -248,10 +254,12 @@ void McpServer::AddCommonTools() {
             });
     }
 
+    // Restore the original tools list to the end of the tools list
     tools_.insert(tools_.end(), original_tools.begin(), original_tools.end());
 }
 
 void McpServer::AddTool(McpTool* tool) {
+    // Prevent adding duplicate tools
     if (std::find_if(tools_.begin(), tools_.end(), [tool](const McpTool* t) { return t->name() == tool->name(); }) != tools_.end()) {
         ESP_LOGW(TAG, "Tool %s already added", tool->name().c_str());
         return;
@@ -295,12 +303,14 @@ void McpServer::ParseCapabilities(const cJSON* capabilities) {
 }
 
 void McpServer::ParseMessage(const cJSON* json) {
+    // Check JSONRPC version
     auto version = cJSON_GetObjectItem(json, "jsonrpc");
     if (version == nullptr || !cJSON_IsString(version) || strcmp(version->valuestring, "2.0") != 0) {
         ESP_LOGE(TAG, "Invalid JSONRPC version: %s", version ? version->valuestring : "null");
         return;
     }
     
+    // Check method
     auto method = cJSON_GetObjectItem(json, "method");
     if (method == nullptr || !cJSON_IsString(method)) {
         ESP_LOGE(TAG, "Missing method");
@@ -312,6 +322,7 @@ void McpServer::ParseMessage(const cJSON* json) {
         return;
     }
     
+    // Check params
     auto params = cJSON_GetObjectItem(json, "params");
     if (params != nullptr && !cJSON_IsObject(params)) {
         ESP_LOGE(TAG, "Invalid params for method: %s", method_str.c_str());
@@ -378,12 +389,19 @@ void McpServer::ParseMessage(const cJSON* json) {
 }
 
 void McpServer::ReplyResult(int id, const std::string& result) {
-    std::string payload = "{\"jsonrpc\":\"2.0\",\"id\":" + std::to_string(id) + ",\"result\":" + result + "}";
+    std::string payload = "{\"jsonrpc\":\"2.0\",\"id\":";
+    payload += std::to_string(id) + ",\"result\":";
+    payload += result;
+    payload += "}";
     Application::GetInstance().SendMcpMessage(payload);
 }
 
 void McpServer::ReplyError(int id, const std::string& message) {
-    std::string payload = "{\"jsonrpc\":\"2.0\",\"id\":" + std::to_string(id) + ",\"error\":{\"message\":\"" + message + "\"}}";
+    std::string payload = "{\"jsonrpc\":\"2.0\",\"id\":";
+    payload += std::to_string(id);
+    payload += ",\"error\":{\"message\":\"";
+    payload += message;
+    payload += "\"}}";
     Application::GetInstance().SendMcpMessage(payload);
 }
 
@@ -396,6 +414,7 @@ void McpServer::GetToolsList(int id, const std::string& cursor) {
     std::string next_cursor = "";
     
     while (it != tools_.end()) {
+        // 如果我们还没有找到起始位置，继续搜索
         if (!found_cursor) {
             if ((*it)->name() == cursor) {
                 found_cursor = true;
@@ -405,8 +424,10 @@ void McpServer::GetToolsList(int id, const std::string& cursor) {
             }
         }
         
+        // 添加tool前检查大小
         std::string tool_json = (*it)->to_json() + ",";
         if (json.length() + tool_json.length() + 30 > max_payload_size) {
+            // 如果添加这个tool会超出大小限制，设置next_cursor并退出循环
             next_cursor = (*it)->name();
             break;
         }
@@ -415,11 +436,12 @@ void McpServer::GetToolsList(int id, const std::string& cursor) {
         ++it;
     }
     
-    if (!json.empty() && json.back() == ',') {
+    if (json.back() == ',') {
         json.pop_back();
     }
     
     if (json.back() == '[' && !tools_.empty()) {
+        // 如果没有添加任何tool，返回错误
         ESP_LOGE(TAG, "tools/list: Failed to add tool %s because of payload size limit", next_cursor.c_str());
         ReplyError(id, "Failed to add tool " + next_cursor + " because of payload size limit");
         return;
@@ -476,12 +498,14 @@ void McpServer::DoToolCall(int id, const std::string& tool_name, const cJSON* to
         return;
     }
 
+    // Start a task to receive data with stack size
     esp_pthread_cfg_t cfg = esp_pthread_get_default_config();
     cfg.thread_name = "tool_call";
     cfg.stack_size = stack_size;
     cfg.prio = 1;
     esp_pthread_set_cfg(&cfg);
 
+    // Use a thread to call the tool to avoid blocking the main thread
     tool_call_thread_ = std::thread([this, id, tool_iter, arguments = std::move(arguments)]() {
         try {
             ReplyResult(id, (*tool_iter)->Call(arguments));
