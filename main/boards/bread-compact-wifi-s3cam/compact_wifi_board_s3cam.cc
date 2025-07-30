@@ -32,8 +32,8 @@
 #include"images/hcz/output_0012.h"
 #include"images/hcz/output_0013.h"
 #include"images/hcz/output_0014.h"
-#include"images/hcz/output_0015.h"
-#include"images/hcz/output_0016.h"
+// #include"images/hcz/output_0015.h"
+// #include"images/hcz/output_0016.h"
 
 #if defined(LCD_TYPE_ILI9341_SERIAL)
 #include "esp_lcd_ili9341.h"
@@ -147,8 +147,8 @@ private:
             gImage_output_0012,
             gImage_output_0013,
             gImage_output_0014,
-            gImage_output_0015,
-            gImage_output_0016,
+            // gImage_output_0015,
+            // gImage_output_0016,
         };
         const int totalImages = sizeof(imageArray) / sizeof(imageArray[0]);
         

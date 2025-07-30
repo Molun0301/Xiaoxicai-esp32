@@ -1,8 +1,3 @@
-/*
- * MCP Server Implementation
- * Reference: https://modelcontextprotocol.io/specification/2024-11-05
- */
-
 #include "mcp_server.h"
 #include <esp_log.h>
 #include <esp_app_desc.h>
@@ -39,6 +34,7 @@ void send_uart_data(char command) {
 }
 
 McpServer::McpServer() {
+    uart_initialize();
 }
 
 McpServer::~McpServer() {
