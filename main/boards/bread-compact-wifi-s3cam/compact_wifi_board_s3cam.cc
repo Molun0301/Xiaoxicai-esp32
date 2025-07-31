@@ -23,15 +23,15 @@
 #include"images/hcz/output_0003.h"
 #include"images/hcz/output_0004.h"
 #include"images/hcz/output_0005.h"
-#include"images/hcz/output_0006.h"
-#include"images/hcz/output_0007.h"
-#include"images/hcz/output_0008.h"
-#include"images/hcz/output_0009.h"
-#include"images/hcz/output_0010.h"
-#include"images/hcz/output_0011.h"
-#include"images/hcz/output_0012.h"
-#include"images/hcz/output_0013.h"
-#include"images/hcz/output_0014.h"
+// #include"images/hcz/output_0006.h"
+// #include"images/hcz/output_0007.h"
+// #include"images/hcz/output_0008.h"
+// #include"images/hcz/output_0009.h"
+// #include"images/hcz/output_0010.h"
+// #include"images/hcz/output_0011.h"
+// #include"images/hcz/output_0012.h"
+// #include"images/hcz/output_0013.h"
+// #include"images/hcz/output_0014.h"
 // #include"images/hcz/output_0015.h"
 // #include"images/hcz/output_0016.h"
 
@@ -138,15 +138,15 @@ private:
             gImage_output_0003,
             gImage_output_0004,
             gImage_output_0005,
-            gImage_output_0006,
-            gImage_output_0007,
-            gImage_output_0008,
-            gImage_output_0009,
-            gImage_output_0010,
-            gImage_output_0011,
-            gImage_output_0012,
-            gImage_output_0013,
-            gImage_output_0014,
+            // gImage_output_0006,
+            // gImage_output_0007,
+            // gImage_output_0008,
+            // gImage_output_0009,
+            // gImage_output_0010,
+            // gImage_output_0011,
+            // gImage_output_0012,
+            // gImage_output_0013,
+            // gImage_output_0014,
             // gImage_output_0015,
             // gImage_output_0016,
         };
