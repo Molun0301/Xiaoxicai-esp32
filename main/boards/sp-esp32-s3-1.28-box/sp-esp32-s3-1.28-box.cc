@@ -1,9 +1,10 @@
 #include "wifi_board.h"
-#include "codecs/es8311_audio_codec.h"
+#include "audio_codecs/es8311_audio_codec.h"
 #include "display/lcd_display.h"
 #include "application.h"
 #include "button.h"
 #include "config.h"
+#include "iot/thing_manager.h"
 #include "led/single_led.h"
 #include "assets/lang_config.h"
 #include <wifi_station.h>
@@ -270,6 +271,13 @@ private:
         });
     }
 
+    // 物联网初始化，添加对 AI 可见设备
+    void InitializeIot() {
+        auto& thing_manager = iot::ThingManager::GetInstance();
+        thing_manager.AddThing(iot::CreateThing("Speaker"));
+        thing_manager.AddThing(iot::CreateThing("Screen"));
+    }
+
 public:
     Spotpear_ESP32_S3_1_28_BOX() : boot_button_(BOOT_BUTTON_GPIO) {
 
@@ -284,6 +292,7 @@ public:
         InitializeSpi();
         InitializeGc9a01Display();
         InitializeButtons();
+        InitializeIot();
         GetBacklight()->RestoreBrightness();
     }
 

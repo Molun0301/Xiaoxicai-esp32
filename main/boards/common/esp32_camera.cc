@@ -112,9 +112,9 @@ bool Esp32Camera::Capture() {
         ESP_LOGE(TAG, "Preview image data is not initialized");
         return true;
     }
-    // 显示预览图片
-    auto display = Board::GetInstance().GetDisplay();
-    if (display != nullptr) {
+    //显示预览图片
+    auto Display = Board::GetInstance().GetDisplay();
+    if (Display != nullptr) {
         auto src = (uint16_t*)fb_->buf;
         auto dst = (uint16_t*)preview_image_.data;
         size_t pixel_count = fb_->len / 2;
@@ -122,7 +122,7 @@ bool Esp32Camera::Capture() {
             // 交换每个16位字内的字节
             dst[i] = __builtin_bswap16(src[i]);
         }
-        display->SetPreviewImage(&preview_image_);
+        Display->SetPreviewImage(&preview_image_);
     }
     return true;
 }
@@ -209,8 +209,7 @@ std::string Esp32Camera::Explain(const std::string& question) {
         }, jpeg_queue);
     });
 
-    auto network = Board::GetInstance().GetNetwork();
-    auto http = network->CreateHttp(3);
+    auto http = Board::GetInstance().CreateHttp();
     // 构造multipart/form-data请求体
     std::string boundary = "----ESP32_CAMERA_BOUNDARY";
 

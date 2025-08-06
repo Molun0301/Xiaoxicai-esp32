@@ -64,6 +64,10 @@ Display::~Display() {
         esp_timer_stop(notification_timer_);
         esp_timer_delete(notification_timer_);
     }
+    if (update_timer_ != nullptr) {
+        esp_timer_stop(update_timer_);
+        esp_timer_delete(update_timer_);
+    }
 
     if (network_label_ != nullptr) {
         lv_obj_del(network_label_);
@@ -89,8 +93,6 @@ void Display::SetStatus(const char* status) {
     lv_label_set_text(status_label_, status);
     lv_obj_clear_flag(status_label_, LV_OBJ_FLAG_HIDDEN);
     lv_obj_add_flag(notification_label_, LV_OBJ_FLAG_HIDDEN);
-
-    last_status_update_time_ = std::chrono::system_clock::now();
 }
 
 void Display::ShowNotification(const std::string &notification, int duration_ms) {
@@ -132,11 +134,9 @@ void Display::Update() {
 }
 
 void Display::UpdateStatusBar(bool update_all) {
-    auto& app = Application::GetInstance();
     auto& board = Board::GetInstance();
     auto codec = board.GetAudioCodec();
 
-    // Update mute icon
     {
         DisplayLockGuard lock(this);
         if (mute_label_ == nullptr) {
@@ -150,23 +150,6 @@ void Display::UpdateStatusBar(bool update_all) {
         } else if (codec->output_volume() > 0 && muted_) {
             muted_ = false;
             lv_label_set_text(mute_label_, "");
-        }
-    }
-
-    // Update time
-    if (app.GetDeviceState() == kDeviceStateIdle) {
-        if (last_status_update_time_ + std::chrono::seconds(10) < std::chrono::system_clock::now()) {
-            // Set status to clock "HH:MM"
-            time_t now = time(NULL);
-            struct tm* tm = localtime(&now);
-            // Check if the we have already set the time
-            if (tm->tm_year >= 2025 - 1900) {
-                char time_str[16];
-                strftime(time_str, sizeof(time_str), "%H:%M  ", tm);
-                SetStatus(time_str);
-            } else {
-                ESP_LOGW(TAG, "System time is not set, tm_year: %d", tm->tm_year);
-            }
         }
     }
 
@@ -199,6 +182,7 @@ void Display::UpdateStatusBar(bool update_all) {
             if (strcmp(icon, FONT_AWESOME_BATTERY_EMPTY) == 0 && discharging) {
                 if (lv_obj_has_flag(low_battery_popup_, LV_OBJ_FLAG_HIDDEN)) { // 如果低电量提示框隐藏，则显示
                     lv_obj_clear_flag(low_battery_popup_, LV_OBJ_FLAG_HIDDEN);
+                    auto& app = Application::GetInstance();
                     app.PlaySound(Lang::Sounds::P3_LOW_BATTERY);
                 }
             } else {
@@ -210,25 +194,21 @@ void Display::UpdateStatusBar(bool update_all) {
         }
     }
 
-    // 每 10 秒更新一次网络图标
-    static int seconds_counter = 0;
-    if (update_all || seconds_counter++ % 10 == 0) {
-        // 升级固件时，不读取 4G 网络状态，避免占用 UART 资源
-        auto device_state = Application::GetInstance().GetDeviceState();
-        static const std::vector<DeviceState> allowed_states = {
-            kDeviceStateIdle,
-            kDeviceStateStarting,
-            kDeviceStateWifiConfiguring,
-            kDeviceStateListening,
-            kDeviceStateActivating,
-        };
-        if (std::find(allowed_states.begin(), allowed_states.end(), device_state) != allowed_states.end()) {
-            icon = board.GetNetworkStateIcon();
-            if (network_label_ != nullptr && icon != nullptr && network_icon_ != icon) {
-                DisplayLockGuard lock(this);
-                network_icon_ = icon;
-                lv_label_set_text(network_label_, network_icon_);
-            }
+    // 升级固件时，不读取 4G 网络状态，避免占用 UART 资源
+    auto device_state = Application::GetInstance().GetDeviceState();
+    static const std::vector<DeviceState> allowed_states = {
+        kDeviceStateIdle,
+        kDeviceStateStarting,
+        kDeviceStateWifiConfiguring,
+        kDeviceStateListening,
+        kDeviceStateActivating,
+    };
+    if (std::find(allowed_states.begin(), allowed_states.end(), device_state) != allowed_states.end()) {
+        icon = board.GetNetworkStateIcon();
+        if (network_label_ != nullptr && icon != nullptr && network_icon_ != icon) {
+            DisplayLockGuard lock(this);
+            network_icon_ = icon;
+            lv_label_set_text(network_label_, network_icon_);
         }
     }
 
@@ -237,63 +217,13 @@ void Display::UpdateStatusBar(bool update_all) {
 
 
 void Display::SetEmotion(const char* emotion) {
-    struct Emotion {
-        const char* icon;
-        const char* text;
-    };
-
-    static const std::vector<Emotion> emotions = {
-        {FONT_AWESOME_EMOJI_NEUTRAL, "neutral"},
-        {FONT_AWESOME_EMOJI_HAPPY, "happy"},
-        {FONT_AWESOME_EMOJI_LAUGHING, "laughing"},
-        {FONT_AWESOME_EMOJI_FUNNY, "funny"},
-        {FONT_AWESOME_EMOJI_SAD, "sad"},
-        {FONT_AWESOME_EMOJI_ANGRY, "angry"},
-        {FONT_AWESOME_EMOJI_CRYING, "crying"},
-        {FONT_AWESOME_EMOJI_LOVING, "loving"},
-        {FONT_AWESOME_EMOJI_EMBARRASSED, "embarrassed"},
-        {FONT_AWESOME_EMOJI_SURPRISED, "surprised"},
-        {FONT_AWESOME_EMOJI_SHOCKED, "shocked"},
-        {FONT_AWESOME_EMOJI_THINKING, "thinking"},
-        {FONT_AWESOME_EMOJI_WINKING, "winking"},
-        {FONT_AWESOME_EMOJI_COOL, "cool"},
-        {FONT_AWESOME_EMOJI_RELAXED, "relaxed"},
-        {FONT_AWESOME_EMOJI_DELICIOUS, "delicious"},
-        {FONT_AWESOME_EMOJI_KISSY, "kissy"},
-        {FONT_AWESOME_EMOJI_CONFIDENT, "confident"},
-        {FONT_AWESOME_EMOJI_SLEEPY, "sleepy"},
-        {FONT_AWESOME_EMOJI_SILLY, "silly"},
-        {FONT_AWESOME_EMOJI_CONFUSED, "confused"}
-    };
-    
-    // 查找匹配的表情
-    std::string_view emotion_view(emotion);
-    auto it = std::find_if(emotions.begin(), emotions.end(),
-        [&emotion_view](const Emotion& e) { return e.text == emotion_view; });
-    
-    DisplayLockGuard lock(this);
-    if (emotion_label_ == nullptr) {
-        return;
-    }
-
-    // 如果找到匹配的表情就显示对应图标，否则显示默认的neutral表情
-    if (it != emotions.end()) {
-        lv_label_set_text(emotion_label_, it->icon);
-    } else {
-        lv_label_set_text(emotion_label_, FONT_AWESOME_EMOJI_NEUTRAL);
-    }
+    // 调用Board的SetEmotion方法
+    auto& board = Board::GetInstance();
+    board.SetEmotion(emotion);
 }
 
 void Display::SetIcon(const char* icon) {
-    DisplayLockGuard lock(this);
-    if (emotion_label_ == nullptr) {
-        return;
-    }
-    lv_label_set_text(emotion_label_, icon);
-}
-
-void Display::SetPreviewImage(const lv_img_dsc_t* image) {
-    // Do nothing
+    // 基类的默认实现为空，由子类重写
 }
 
 void Display::SetChatMessage(const char* role, const char* content) {
@@ -304,36 +234,12 @@ void Display::SetChatMessage(const char* role, const char* content) {
     lv_label_set_text(chat_message_label_, content);
 }
 
-void Display::SetMusicInfo(const char* song_name) {
-    // 默认实现：对于非微信模式，将歌名显示在聊天消息标签中
-    DisplayLockGuard lock(this);
-    if (chat_message_label_ == nullptr) {
-        return;
-    }
-    if (song_name != nullptr && strlen(song_name) > 0) {
-        std::string music_text = "";
-        music_text += song_name;
-        lv_label_set_text(chat_message_label_, music_text.c_str());
-    } else {
-        lv_label_set_text(chat_message_label_, "");
-    }
-}
-
 void Display::SetTheme(const std::string& theme_name) {
     current_theme_name_ = theme_name;
     Settings settings("display", true);
     settings.SetString("theme", theme_name);
 }
 
-void Display::ShowStandbyScreen(bool show) {
-    if (show) {
-        SetChatMessage("system", "");
-        SetEmotion("sleepy");
-    } else {
-        SetChatMessage("system", "");
-        SetEmotion("neutral");
-    }
-}
 
 void Display::CreateCanvas() {
     DisplayLockGuard lock(this);

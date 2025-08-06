@@ -1,11 +1,12 @@
 #include "wifi_board.h"
-#include "codecs/no_audio_codec.h"
+#include "audio_codecs/no_audio_codec.h"
 #include "zhengchen_lcd_display.h"
 #include "system_reset.h"
 #include "application.h"
 #include "button.h"
 #include "config.h"
 #include "power_save_timer.h"
+#include "iot/thing_manager.h"
 #include "led/single_led.h"
 #include "assets/lang_config.h"
 #include "power_manager.h"
@@ -178,7 +179,13 @@ private:
         display_->SetupHighTempWarningPopup();
     }
 
-    void InitializeTools() {
+    void InitializeIot() {
+#if CONFIG_IOT_PROTOCOL_XIAOZHI
+        auto& thing_manager = iot::ThingManager::GetInstance();
+        thing_manager.AddThing(iot::CreateThing("Speaker"));
+        thing_manager.AddThing(iot::CreateThing("Screen"));
+        thing_manager.AddThing(iot::CreateThing("Battery"));
+#endif
     }
 
 public:
@@ -191,7 +198,7 @@ ZHENGCHEN_1_54TFT_WIFI() :
         InitializeSpi();
         InitializeButtons();
         InitializeSt7789Display();  
-        InitializeTools();
+        InitializeIot();
         GetBacklight()->RestoreBrightness();
     }
 

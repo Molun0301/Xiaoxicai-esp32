@@ -6,12 +6,10 @@
 #include <mqtt.h>
 #include <udp.h>
 #include <string>
-#include <network_interface.h>
 
 #include "led/led.h"
 #include "backlight.h"
 #include "camera.h"
-#include "music.h"
 
 void* create_board();
 class AudioCodec;
@@ -27,9 +25,6 @@ protected:
 
     // 软件生成的设备唯一标识
     std::string uuid_;
-    
-    // 音乐播放器实例
-    Music* music_;
 
 public:
     static Board& GetInstance() {
@@ -37,7 +32,7 @@ public:
         return *instance;
     }
 
-    virtual ~Board();
+    virtual ~Board() = default;
     virtual std::string GetBoardType() = 0;
     virtual std::string GetUuid() { return uuid_; }
     virtual Backlight* GetBacklight() { return nullptr; }
@@ -46,8 +41,10 @@ public:
     virtual bool GetTemperature(float& esp32temp);
     virtual Display* GetDisplay();
     virtual Camera* GetCamera();
-    virtual Music* GetMusic();
-    virtual NetworkInterface* GetNetwork() = 0;
+    virtual Http* CreateHttp() = 0;
+    virtual WebSocket* CreateWebSocket() = 0;
+    virtual Mqtt* CreateMqtt() = 0;
+    virtual Udp* CreateUdp() = 0;
     virtual void StartNetwork() = 0;
     virtual const char* GetNetworkStateIcon() = 0;
     virtual bool GetBatteryLevel(int &level, bool& charging, bool& discharging);
@@ -55,6 +52,7 @@ public:
     virtual void SetPowerSaveMode(bool enabled) = 0;
     virtual std::string GetBoardJson() = 0;
     virtual std::string GetDeviceStatusJson() = 0;
+    virtual void SetEmotion(const char* emotion) {}
 };
 
 #define DECLARE_BOARD(BOARD_CLASS_NAME) \

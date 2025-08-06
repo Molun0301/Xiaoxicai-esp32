@@ -1,0 +1,25 @@
+根据代码分析，系统通过以下流程实现根据对话内容显示表情：
+
+1. 
+   情感获取 ：在 application.cc 中，当接收到 llm 类型的消息时，会从 JSON 数据中提取 emotion 字段的值，这是由大语言模型分析对话内容后生成的情感标签。
+2. 
+   表情设置 ：通过调用 display->SetEmotion(emotion_str.c_str()) 方法设置表情。
+3. 
+   表情映射 ：在 display.cc 中， SetEmotion 方法定义了一个情感数组，将情感标签映射到对应的 Font Awesome 图标。例如：
+   
+   - "happy" 对应 FONT_AWESOME_EMOJI_HAPPY
+   - "sad" 对应 FONT_AWESOME_EMOJI_SAD
+   - 等等
+4. 
+   板级实现 ：在 compact_wifi_board_s3cam.cc 中，板级代码重写了 SetEmotion 方法，将情感保存到 current_dialog_emotion_ 变量中，并通过 getImageByEmotion 函数将情感映射到具体的图片资源。
+5. 
+   表情显示 ：有一个专门的图片显示任务，会根据当前的情感状态 current_dialog_emotion_ 显示对应的图片。
+6. 
+   动作执行 ：同时，系统会调用 ExecuteEmotionAction 方法，根据情感标签执行相应的动作（如动耳朵、点头等）。
+总结来说，整个过程是：对话内容 -> LLM 情感分析 -> 情感标签 -> 表情映射 -> 显示表情和执行动作。
+
+根据以上信息，完成下面的需求：
+1.获取当前情绪，但是不再映射到Font Awesome 图标，而是使用main\images\cute下的表情文件并显示
+2.统一情绪变量，当对话时获取对话的情绪，当待机的时候随机触发情绪。
+3.实现触发情绪时有概率做动作，并且每个情绪有几个不同的符合情绪的动作可以随机触发。动作通过串口发送，可以参考mcp_server.cc的代码。
+4.删除lcd_display.cc中根据情绪做动作的代码，并检查是否有重复代码，保证代码的一致性和完整性。
